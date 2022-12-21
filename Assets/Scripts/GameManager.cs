@@ -6,34 +6,40 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using MoreMountains.NiceVibrations;
+using UnityEditor;
 
 public class GameManager : MonoBehaviour
 {
     public enum hapticTypes {soft, light, medium, heavy, success, failure};
     public enum soundTypes { pop, upgrade, money, coins, tap, win};
-    public Transform walls, floors, tables;
+    public Transform walls, floors, tables, tileFX;
     public Transform[] audioClips;
     public Tile[] tiles;
+    public int touchCount;
 
-    [SerializeField] Transform progressBar, camPositions, tilesContainer, sampleCam, levelParent, levelObj, tileObj, patternsParent;
-    [SerializeField] GameObject winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, tilesSelection, orderPanel;
+    [SerializeField] Transform progressBar, camPositions, tilesContainer, sampleCam, levelParent, levelObj, tileObj, patternsParent, removeTileImg;
+    [SerializeField] GameObject winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, tilesSelection, orderPanel, returnDoneButton, sampleButton, sampleFullButton;
     [SerializeField] TextMeshProUGUI levelTxt, cashTxt, orderCashTxt, fillPercent;
     [SerializeField] Customer customer;
     [SerializeField] GameObject[] stars;
     [SerializeField] Image tileFill;
-    [SerializeField] Material houseMat, floorMat; 
+    [SerializeField] Material houseMat, floorMat;
+    [SerializeField] Transform hand;
+    [SerializeField] Texture2D hand1;
 
     [HideInInspector] public bool gameStarted, remove;
     [HideInInspector] public int level, wallLevel, floorLevel, tableLevel, cash, orderCash;
 
     public List<Tile> currentMats = new List<Tile>();
+    public List<TipRenderer> placedTiles = new List<TipRenderer>();
     public Transform currentpattern, currentLevel;
     public int[] TargetTiles = new int[100], tilesSpawned = new int[100];
     private Transform tile;
     private const int camTween = 0;
     private Camera cam;
     private float popPitch = 0.5f, matchPercentage;
-    private int tileIndex, touchCount;
+    private int tileIndex;
+    private bool removeTileTut;
 
     private void Awake()
     {
@@ -41,6 +47,9 @@ public class GameManager : MonoBehaviour
     }
     private void Start()
     {
+#if UNITY_EDITOR
+        Cursor.SetCursor(PlayerSettings.defaultCursor, new Vector2(35, 35), CursorMode.ForceSoftware);
+#endif
         cam = Camera.main;
         level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 1;
         levelTxt.text = "LEVEL " + level;
@@ -84,7 +93,18 @@ public class GameManager : MonoBehaviour
         cashTxt.text = GetValue(cash);
         if (popPitch > 0.5f)
             popPitch = Mathf.Lerp(popPitch, 0.5f, Time.deltaTime);
+        //hand.localPosition = cam.ScreenToWorldPoint(Input.mousePosition);
+        if (Input.GetMouseButtonDown(0))
+            Cursor.SetCursor(hand1, new Vector2(35, 35), CursorMode.ForceSoftware);
+        if(Input.GetMouseButtonUp(0))
+            Cursor.SetCursor(PlayerSettings.defaultCursor, new Vector2(35, 35), CursorMode.ForceSoftware);
+
+            //StartCoroutine(HandClick());
     }
+    //IEnumerator HandClick()
+    //{
+    //    yield return new WaitForSeconds(0.1f);
+    //}
 
     void InitLevel(int order)
     {
@@ -132,7 +152,7 @@ public class GameManager : MonoBehaviour
             {
                 tempPattern.Add(i);
             }
-            currentpattern = patternsParent.GetChild(tempPattern[Random.Range(0, tempPattern.Count)]);
+            currentpattern = patternsParent.GetChild(l < 20? tempPattern[tempPattern.Count - 1]: tempPattern[Random.Range(0, tempPattern.Count)]);
             currentLevel = Instantiate(levelObj, Vector3.forward * 10.5f * order, Quaternion.identity, levelParent);
             currentLevel.GetChild(0).GetChild(Random.Range(0, currentLevel.GetChild(0).childCount)).gameObject.SetActive(true);
             if (order == -1)
@@ -164,6 +184,45 @@ public class GameManager : MonoBehaviour
         Random.state = state;
     }
 
+    public void RemoveTiles(bool condn)
+    {
+        if (condn)
+        {
+            if (removeTileTut)
+            {
+                removeTileTut = false;
+                DOTween.Kill(2);
+            }
+            tilesSelection.transform.DOLocalMoveX(1000, 0.25f).SetEase(Ease.Linear).OnComplete(()=>
+            {
+                returnDoneButton.SetActive(true);
+                tilesSelection.SetActive(false);
+            });
+            for (int i = 0; i < currentLevel.GetChild(1).childCount; i++)
+            {
+                currentLevel.GetChild(1).GetChild(i).GetComponent<TipRenderer>().PauseHighlight();
+            }
+            for (int i = 0; i < placedTiles.Count; i++)
+            {
+                placedTiles[i].Initialise();
+            }
+            nextButton.SetActive(false);
+        }
+        else
+        {
+            returnDoneButton.SetActive(false);
+            tilesSelection.SetActive(true);
+            tilesSelection.transform.DOLocalMoveX(0, 0.25f).SetEase(Ease.Linear);
+            for (int i = 0; i < currentLevel.GetChild(1).childCount; i++)
+            {
+                if(currentLevel.GetChild(1).GetChild(i).GetComponent<TipRenderer>().active)
+                    currentLevel.GetChild(1).GetChild(i).GetComponent<TipRenderer>().Initialise();
+            }
+            if (touchCount > 99)
+                nextButton.SetActive(true);
+        }
+        remove = condn;
+    }
     public void TileSelection(int index)
     {
         PlaySound(soundTypes.tap);
@@ -184,9 +243,17 @@ public class GameManager : MonoBehaviour
         tile = Instantiate(tileObj, position + new Vector3(0, 0.5f, 0), Quaternion.identity, currentLevel);
         tile.GetComponent<MeshRenderer>().material = currentMats[tileIndex].mat;
         tile.DOMoveY(0, 0.25f).SetEase(Ease.Linear);
-        tilesSpawned[(int)(((position.x + 9.5f) * 10) + position.z + 4.5f)] = tileIndex;
+        tilesSpawned[(int)(((position.z + 4.5f) * 10) + (position.x + 9.5f))] = tileIndex;
+        placedTiles.Add(tile.GetComponent<TipRenderer>());
         if (touchCount > 99)
             nextButton.SetActive(true);
+        if (level < 3 && TargetTiles[(int)(((position.z + 4.5f) * 10) + (position.x + 9.5f))] != tileIndex && !removeTileTut)
+        {
+            removeTileTut = true;
+            removeTileImg.DOScale(1.2f, 0.25f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(2);
+        }
+        //if (TargetTiles[(int)(((position.z + 4.5f) * 10) + (position.x + 9.5f))] != tileIndex && Input.GetKey("t"))
+        //    tile.GetComponent<MeshRenderer>().material.color = Color.black;
     }
 
     public IEnumerator makeSample()
@@ -206,7 +273,7 @@ public class GameManager : MonoBehaviour
                 int a = int.Parse(currentpattern.GetChild((i * 10) + j).name);
                 while (a > currentMats.Count - 1)
                     a -= currentMats.Count;
-                tile = Instantiate(tileObj, new Vector3(j - 9.5f, -10, i - 4.5f), Quaternion.identity, currentLevel);
+                tile = Instantiate(tileObj, new Vector3(j - 9.5f + 20, -10, i - 4.5f), Quaternion.identity, currentLevel);
                 tile.GetComponent<MeshRenderer>().material = currentMats[a].mat;
                 TargetTiles[(i * 10) + j] = a;
             }
@@ -349,6 +416,7 @@ public class GameManager : MonoBehaviour
     {
         PlaySound(soundTypes.win);
 
+        orderPanel.SetActive(false);
         nextButton.SetActive(false);
         cam.transform.GetChild(0).gameObject.SetActive(true);
         tilesSelection.SetActive(false);
@@ -420,7 +488,7 @@ public class GameManager : MonoBehaviour
             customer.anim.Play("happy");
             orderCash = (int)(orderCash * 1.2f);
         }
-        else if (MatchCount < 100)
+        else
         {
             customer.anim.Play("jump");
             orderCash = (int)(orderCash * 1.3f);
@@ -449,7 +517,7 @@ public class GameManager : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
                 stars[1].SetActive(true);
             }
-            else if (MatchCount < 100)
+            else
             {
                 stars[0].SetActive(true);
                 yield return new WaitForSeconds(0.5f);
@@ -463,7 +531,7 @@ public class GameManager : MonoBehaviour
         float f2 = f == 0 ? 1 : f;
         tileFill.DOFillAmount(f2, 0.5f).SetEase(Ease.Linear).From(f1 == 1 ? 0 : f1);
         fillPercent.text = (f2 * 100) + "%".ToString();
-        tileFill.sprite = tiles[(level / 5) + 1].sprite;
+        tileFill.sprite = tiles[(level / 5) + 2].sprite;
     }
 
     public void Restart()
@@ -472,7 +540,20 @@ public class GameManager : MonoBehaviour
 
         whiteScreen.GetComponent<Image>().DOFade(1, 0.5f).SetEase(Ease.Linear).OnComplete(()=> SceneManager.LoadScene(0));
     }
+    public void SampleFullScreen(bool condn)
+    {
+        if (condn)
+        {
+            sampleButton.SetActive(false);
+            sampleFullButton.SetActive(true);
+        }
+        else
+        {
+            sampleButton.SetActive(true);
+            sampleFullButton.SetActive(false);
+        }
 
+    }
 }
 [System.Serializable]
 public class Tile
