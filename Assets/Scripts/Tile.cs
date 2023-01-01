@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-public class TipRenderer : MonoBehaviour
+public class Tile : MonoBehaviour
 {
     public bool active, isTile;
+    public Vector2Int index;
     private Material material;
     private GameManager gManager;
 
@@ -13,7 +14,7 @@ public class TipRenderer : MonoBehaviour
     {
         gManager = FindObjectOfType<GameManager>();
         material = GetComponent<MeshRenderer>().material;
-        if(!isTile)
+        if (!isTile)
             material.DOFade(0, 0);
     }
 
@@ -27,10 +28,10 @@ public class TipRenderer : MonoBehaviour
     }
     private void OnMouseEnter()
     {
-        if (active && !PlayerPrefs.HasKey("tap") && !isTile && !gManager.remove && Input.GetMouseButton(0))
+        if (active && !PlayerPrefs.HasKey("tap") && !isTile && !gManager.remove)
         {
             active = false;
-            gManager.Touched(transform.position);
+            gManager.Touched(index);
             DOTween.Kill(transform.GetHashCode());
             material.DOFade(0, 0);
         }
@@ -45,18 +46,18 @@ public class TipRenderer : MonoBehaviour
         if (active && PlayerPrefs.HasKey("tap") && !isTile && gManager.remove)
         {
             active = false;
-            gManager.Touched(transform.position);
+            gManager.Touched(index);
             DOTween.Kill(transform.GetHashCode());
             material.DOFade(0, 0);
         }
-        else if(isTile && gManager.remove)
+        else if (isTile && gManager.remove)
         {
             gManager.touchCount--;
             DOTween.Kill(transform.GetHashCode());
             transform.DOMoveY(0.2f, 0);
-            gManager.currentLevel.GetChild(1).GetChild((int)(((transform.position.x + 9.5f) * 10) + transform.position.z + 4.5f)).GetComponent<TipRenderer>().active = true;
-            gManager.placedTiles.Remove(GetComponent<TipRenderer>());
-            Instantiate(gManager.tileFX, transform.position, Quaternion.identity);
+            gManager.tileHighlighters[(index.x * 5) + index.y].GetComponent<Tile>().active = true;
+            gManager.placedTiles.Remove(GetComponent<Tile>());
+            Instantiate(gManager.tileRemoveFX, transform.position, Quaternion.identity);
             Destroy(gameObject);
         }
     }

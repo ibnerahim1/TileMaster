@@ -24,43 +24,43 @@ public class Store : MonoBehaviour
     }
     private void LateUpdate()
     {
-        wallButton.interactable = (gManager.cash > GetWallCost() && gManager.wallLevel < gManager.walls.childCount);
-        floorButton.interactable = (gManager.cash > GetFloorCost() && gManager.floorLevel < gManager.floors.childCount);
-        tableButton.interactable = (gManager.cash > GetTableCost() && gManager.tableLevel < gManager.tables.childCount);
+        //wallButton.interactable = (gManager.cash > GetWallCost() && gManager.wallLevel < gManager.walls.childCount);
+        //floorButton.interactable = (gManager.cash > GetFloorCost() && gManager.floorLevel < gManager.floors.childCount);
+        //tableButton.interactable = (gManager.cash > GetTableCost() && gManager.tableLevel < gManager.tables.childCount);
     }
     public void Upgrade(string val)
     {
         gManager.PlaySound(GameManager.soundTypes.upgrade);
 
-        switch (val)
-        {
-            case "wall":
-                gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(false);
-                gManager.cash -= GetWallCost();
-                gManager.wallLevel++;
-                gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(true);
-                break;
-            case "floor":
-                gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(false);
-                gManager.cash -= GetFloorCost();
-                gManager.floorLevel++;
-                gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(true);
-                break;
-            case "table":
-                gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(false);
-                gManager.cash -= GetTableCost();
-                gManager.tableLevel++;
-                gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(true);
-                break;
-        }
+        //switch (val)
+        //{
+        //    case "wall":
+        //        gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(false);
+        //        gManager.cash -= GetWallCost();
+        //        gManager.wallLevel++;
+        //        gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(true);
+        //        break;
+        //    case "floor":
+        //        gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(false);
+        //        gManager.cash -= GetFloorCost();
+        //        gManager.floorLevel++;
+        //        gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(true);
+        //        break;
+        //    case "table":
+        //        gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(false);
+        //        gManager.cash -= GetTableCost();
+        //        gManager.tableLevel++;
+        //        gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(true);
+        //        break;
+        //}
         UpdateStore();
         gManager.SaveData();
     }
     void UpdateStore()
     {
-        wallLevelTxt.text = gManager.wallLevel < gManager.walls.childCount? "LEVEL " + gManager.wallLevel : "MAX";
-        floorLevelTxt.text = gManager.floorLevel < gManager.floors.childCount ? "LEVEL " + gManager.floorLevel : "MAX";
-        tableLevelTxt.text = gManager.tableLevel < gManager.tables.childCount ? "LEVEL " + gManager.tableLevel : "MAX";
+        //wallLevelTxt.text = gManager.wallLevel < gManager.walls.childCount? "LEVEL " + gManager.wallLevel : "MAX";
+        //floorLevelTxt.text = gManager.floorLevel < gManager.floors.childCount ? "LEVEL " + gManager.floorLevel : "MAX";
+        //tableLevelTxt.text = gManager.tableLevel < gManager.tables.childCount ? "LEVEL " + gManager.tableLevel : "MAX";
 
         wallCostTxt.text = gManager.GetValue(GetWallCost());
         floorCostTxt.text = gManager.GetValue(GetFloorCost());
