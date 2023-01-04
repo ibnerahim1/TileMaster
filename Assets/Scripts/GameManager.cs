@@ -31,10 +31,9 @@ public class GameManager : MonoBehaviour
     [HideInInspector] public int level, wallLevel, floorLevel, tableLevel, cash, orderCash;
 
     public List<TileData> currentMats = new List<TileData>();
-    public List<Tile> placedTiles = new List<Tile>();
-    public List<Tile> tileHighlighters = new List<Tile>();
+    public Tile[,] tiles = new Tile[5,5];
     public Transform currentLevel;
-    public int[] TargetTiles = new int[25], tilesSpawned = new int[25];
+    public int[,] TargetTiles = new int[5,5], tilesSpawned = new int[5,5];
     private Transform tile;
     private const int camTween = 0;
     private Camera cam;
@@ -52,16 +51,20 @@ public class GameManager : MonoBehaviour
         Cursor.SetCursor(PlayerSettings.defaultCursor, new Vector2(35, 35), CursorMode.ForceSoftware);
 #endif
         cam = Camera.main;
-        level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 1;
-        levelTxt.text = "LEVEL " + level;
+        level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 0;
+        levelTxt.text = "LEVEL " + (level + 1);
 
-        for (int i = 0; i < (level - 1) % 5; i++)
+        for (int i = 0; i < level % 5; i++)
         {
             progressBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
         }
-        progressBar.GetChild((level - 1) % 5).GetChild(1).gameObject.SetActive(true);
+        progressBar.GetChild(level % 5).GetChild(1).gameObject.SetActive(true);
         cam.transform.DOMove(camPositions.GetChild(0).position, 0.5f).SetEase(Ease.Linear).SetId(camTween).SetDelay(0.5f);
         cam.transform.DORotate(camPositions.GetChild(0).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).SetDelay(0.5f);
+
+        nextTileFill.fillAmount = (float)(level % 3) / 3;
+        nextTileFill.sprite = tileDatas[(level / 3) + 2].sprite;
+        fillPercent.text = (level%3) == 0? "30%" : ((level % 3) == 1 ? "60%" : "100%");
 
         InitLevel(-1);
         InitLevel(0);
@@ -82,6 +85,8 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.DeleteAll();
         if (Input.GetKeyDown("n"))
             PlayerPrefs.SetInt("level", PlayerPrefs.GetInt("level") + 1);
+        if (Input.GetKeyDown("l"))
+            StartCoroutine(LevelComplete());
 #endif
         #endregion
         cashTxt.text = GetValue(cash);
@@ -104,14 +109,14 @@ public class GameManager : MonoBehaviour
         {
             List<TileData> tempMats = new List<TileData>();
             currentMats.Clear();
-            for (int i = 0; i < Mathf.Min((l / 5) + 2, tileDatas.Length); i++)
+            for (int i = 0; i < Mathf.Min((l / 3) + 2, tileDatas.Length); i++)
             {
                 tempMats.Add(tileDatas[i]);
             }
             int b = Mathf.Min(tempMats.Count, tilesContainer.childCount);
             for (int i = 0; i < b; i++)
             {
-                if (l < 10 || l / 5 == 0)
+                if (l < 10 || l / 3 == 0)
                 {
                     currentMats.Add(tempMats[tempMats.Count - 1]);
                     tempMats.RemoveAt(tempMats.Count - 1);
@@ -142,10 +147,10 @@ public class GameManager : MonoBehaviour
                 {
                     for (int j = 0; j < 5; j++)
                     {
-                        Tile tempHiglight = Instantiate(tileObj, new Vector3((i * 2) - 9, 0, (j * 2) - 4f), Quaternion.identity, currentLevel).GetComponent<Tile>();
-                        tempHiglight.isTile = false;
-                        tempHiglight.index = new Vector2Int(i, j);
-                        tileHighlighters.Add(tempHiglight);
+                        tiles[i, j] = Instantiate(tileObj, new Vector3((i * 2) - 9, 0, (j * 2) - 4f), Quaternion.identity, currentLevel).GetComponent<Tile>();
+                        tiles[i, j].isTile = false;
+                        tiles[i, j].index = new Vector2Int(i, j);
+                        tiles[i, j].transform.localScale = new Vector3(1.8f, 1, 1.8f);
                     }
                 }
             }
@@ -154,7 +159,7 @@ public class GameManager : MonoBehaviour
             {
                 tempPattern.Add(i);
             }
-            currentPattern = l < 20 ? tempPattern[tempPattern.Count - 1] : tempPattern[Random.Range(0, tempPattern.Count)];
+            currentPattern = l < 20 ? tempPattern[l%tempPattern.Count] : tempPattern[Random.Range(0, tempPattern.Count)];
 
             if (order == -1)
             {
@@ -199,13 +204,15 @@ public class GameManager : MonoBehaviour
                 returnDoneButton.SetActive(true);
                 tilesSelection.SetActive(false);
             });
-            for (int i = 0; i < currentLevel.GetChild(1).childCount; i++)
+            for (int i = 0; i < 5; i++)
             {
-                tileHighlighters[i].GetComponent<Tile>().PauseHighlight();
-            }
-            for (int i = 0; i < placedTiles.Count; i++)
-            {
-                placedTiles[i].Initialise();
+                for (int j = 0; j < 5; j++)
+                {
+                    if (tiles[i, j].isTile)
+                        tiles[i, j].Initialise();
+                    else
+                        tiles[i, j].PauseHighlight();
+                }
             }
             nextButton.SetActive(false);
         }
@@ -214,10 +221,13 @@ public class GameManager : MonoBehaviour
             returnDoneButton.SetActive(false);
             tilesSelection.SetActive(true);
             tilesSelection.transform.DOLocalMoveX(0, 0.25f).SetEase(Ease.Linear);
-            for (int i = 0; i < tileHighlighters.Count; i++)
+            for (int i = 0; i < 5; i++)
             {
-                if (tileHighlighters[i].GetComponent<Tile>().active)
-                    tileHighlighters[i].GetComponent<Tile>().Initialise();
+                for (int j = 0; j < 5; j++)
+                {
+                    if(!tiles[i, j].isTile)
+                        tiles[i, j].Initialise();
+                }
             }
             if (touchCount > 24)
                 nextButton.SetActive(true);
@@ -240,21 +250,22 @@ public class GameManager : MonoBehaviour
         PlaySound(soundTypes.pop);
 
         touchCount++;
+        tiles[tIndex.x, tIndex.y].isTile = true;
+        tiles[tIndex.x, tIndex.y].transform.localScale = new Vector3(2, 1, 2);
+        tiles[tIndex.x, tIndex.y].transform.position += new Vector3(0, 0.5f, 0);
+        tiles[tIndex.x, tIndex.y].GetComponent<MeshRenderer>().material = currentMats[tileIndex].mat;
+        tiles[tIndex.x, tIndex.y].transform.DOMoveY(0, 0.25f).SetEase(Ease.Linear);
+        tilesSpawned[tIndex.x, tIndex.y] = tileIndex;
 
-        tile = Instantiate(tileObj, new Vector3((tIndex.x * 2) - 9, 0.5f, (tIndex.y * 2) - 4), Quaternion.identity, currentLevel);
-        tile.GetComponent<MeshRenderer>().material = currentMats[tileIndex].mat;
-        tile.DOMoveY(0, 0.25f).SetEase(Ease.Linear);
-        tilesSpawned[(tIndex.x * 5) + tIndex.y] = tileIndex;
-        placedTiles.Add(tile.GetComponent<Tile>());
         if (touchCount > 24)
             nextButton.SetActive(true);
-        if (level < 3 && TargetTiles[(tIndex.x * 5) + tIndex.y] != tileIndex && !removeTileTut)
+        if (level < 3 && TargetTiles[tIndex.x, tIndex.y] != tileIndex && !removeTileTut)
         {
             removeTileTut = true;
             removeTileImg.DOScale(1.2f, 0.25f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(2);
         }
-        if (TargetTiles[(tIndex.x * 5) + tIndex.y] != tileIndex && Input.GetKey("t"))
-            tile.GetComponent<MeshRenderer>().material.color = Color.black;
+        if (TargetTiles[tIndex.x, tIndex.y] != tileIndex && Input.GetKey("t"))
+            tiles[tIndex.x, tIndex.y].GetComponent<MeshRenderer>().material.color = Color.black;
     }
 
     public IEnumerator makeSample()
@@ -274,9 +285,9 @@ public class GameManager : MonoBehaviour
                 int a = patterns[currentPattern, i, j];
                 while (a > currentMats.Count - 1)
                     a -= currentMats.Count;
-                tile = Instantiate(tileObj, new Vector3(j * 2 - 8.5f + 20, -10, i * 2 - 3.5f), Quaternion.identity, currentLevel);
+                tile = Instantiate(tileObj, new Vector3((i * 2) - 9 + 20, -10, (j * 2) - 4), Quaternion.identity, currentLevel);
                 tile.GetComponent<MeshRenderer>().material = currentMats[a].mat;
-                TargetTiles[(i * 5) + j] = a;
+                TargetTiles[i, j] = a;
             }
         }
 
@@ -284,10 +295,13 @@ public class GameManager : MonoBehaviour
         cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
         cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() =>
         {
-
-            for (int i = 0; i < tileHighlighters.Count; i++)
+            gameStarted = true;
+            for (int i = 0; i < 5; i++)
             {
-                tileHighlighters[i].GetComponent<Tile>().Initialise();
+                for (int j = 0; j < 5; j++)
+                {
+                    tiles[i, j].Initialise();
+                }
             }
             tilesSelection.SetActive(true);
         });
@@ -405,7 +419,6 @@ public class GameManager : MonoBehaviour
     {
         PlaySound(soundTypes.tap);
 
-        gameStarted = true;
         menuPanel.SetActive(false);
         gamePanel.SetActive(true);
         cashPanel.SetActive(false);
@@ -442,7 +455,6 @@ public class GameManager : MonoBehaviour
     }
     public void SaveData()
     {
-        PlayerPrefs.SetInt("level", level);
         PlayerPrefs.SetInt("cash", cash);
 
         PlayerPrefs.SetInt("wallLevel", wallLevel);
@@ -460,10 +472,13 @@ public class GameManager : MonoBehaviour
 
         int MatchCount = 0;
 
-        for (int i = 0; i < tilesSpawned.Length; i++)
+        for (int i = 0; i < 5; i++)
         {
-            if (tilesSpawned[i] == TargetTiles[i])
-                MatchCount++;
+            for (int j = 0; j < 5; j++)
+            {
+                if (tilesSpawned[i, j] == TargetTiles[i, j])
+                    MatchCount++;
+            }
         }
 
         yield return new WaitForSeconds(0.5f);
@@ -486,7 +501,7 @@ public class GameManager : MonoBehaviour
             customer.anim.Play("talk");
             orderCash = (int)(orderCash * 1.1f);
         }
-        else if (MatchCount < 20)
+        else if (MatchCount < 15)
         {
             customer.anim.Play("happy");
             orderCash = (int)(orderCash * 1.2f);
@@ -514,7 +529,7 @@ public class GameManager : MonoBehaviour
             {
                 stars[0].SetActive(true);
             }
-            else if (MatchCount < 20)
+            else if (MatchCount < 15)
             {
                 stars[0].SetActive(true);
                 yield return new WaitForSeconds(0.5f);
@@ -529,12 +544,7 @@ public class GameManager : MonoBehaviour
                 stars[2].SetActive(true);
             }
         }
-        float f = (float)((level - 1) % 5) / 5;
-        float f1 = (float)((level - 2) % 5) / 5;
-        float f2 = f == 0 ? 1 : f;
-        nextTileFill.DOFillAmount(f2, 0.5f).SetEase(Ease.Linear).From(f1 == 1 ? 0 : f1);
-        fillPercent.text = (f2 * 100) + "%".ToString();
-        nextTileFill.sprite = tileDatas[(level / 5) + 2].sprite;
+        nextTileFill.DOFillAmount((level % 3) == 0 ? 1 : ((level % 3) == 1 ? 0.33f : 0.66f), 0.5f).SetEase(Ease.Linear);
     }
 
     public void Restart()
@@ -590,32 +600,32 @@ public class GameManager : MonoBehaviour
             {0, 0, 0, 0, 0 },
             },
             {//p5
-            {0, 1, 0, 1, 0 },
-            {1, 0, 1, 0, 1 },
-            {0, 1, 0, 1, 0 },
-            {1, 0, 1, 0, 1 },
-            {0, 1, 0, 1, 0 },
-            },
-            {//p6
             {2, 0, 1, 0, 2 },
             {0, 0, 1, 0, 0 },
             {1, 1, 1, 1, 1 },
             {0, 0, 1, 0, 0 },
             {2, 0, 1, 0, 2 },
             },
-            {//p7
+            {//p6
             {0, 1, 2, 3, 4 },
             {0, 1, 2, 3, 4 },
             {0, 1, 2, 3, 4 },
             {0, 1, 2, 3, 4 },
             {0, 1, 2, 3, 4 },
             },
-            {//p8
+            {//p7
             {0, 0, 0, 0, 0 },
             {1, 1, 1, 1, 1 },
             {2, 2, 2, 2, 2 },
             {3, 3, 3, 3, 3 },
             {4, 4, 4, 4, 4 },
+            },
+            {//p8
+            {0, 1, 1, 1, 1 },
+            {0, 2, 3, 3, 1 },
+            {0, 2, 4, 3, 1 },
+            {0, 2, 2, 2, 1 },
+            {0, 0, 0, 0, 0 },
             },
             {//p9
             {0, 1, 2, 3, 4 },
@@ -625,11 +635,11 @@ public class GameManager : MonoBehaviour
             {4, 3, 2, 1, 0 },
             },
             {//p10
-            {0, 1, 1, 1, 1 },
-            {0, 2, 3, 3, 1 },
-            {0, 2, 4, 3, 1 },
-            {0, 2, 2, 2, 1 },
-            {0, 0, 0, 0, 0 },
+            {0, 1, 0, 1, 0 },
+            {1, 0, 1, 0, 1 },
+            {0, 1, 0, 1, 0 },
+            {1, 0, 1, 0, 1 },
+            {0, 1, 0, 1, 0 },
             }
         };
     }
