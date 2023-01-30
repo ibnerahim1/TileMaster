@@ -12,7 +12,6 @@ public abstract class MaxSdkBase
     protected static readonly MaxTargetingData SharedTargetingData = new MaxTargetingData();
 
 
-
 #if UNITY_EDITOR || UNITY_IPHONE || UNITY_IOS
     /// <summary>
     /// App tracking status values. Primarily used in conjunction with iOS14's AppTrackingTransparency.framework.
@@ -101,6 +100,7 @@ public abstract class MaxSdkBase
             sdkConfiguration.IsSuccessfullyInitialized = MaxSdkUtils.GetBoolFromDictionary(eventProps, "isSuccessfullyInitialized");
             sdkConfiguration.CountryCode = MaxSdkUtils.GetStringFromDictionary(eventProps, "countryCode", "");
 
+#pragma warning disable 0618
             var consentDialogStateStr = MaxSdkUtils.GetStringFromDictionary(eventProps, "consentDialogState", "");
             if ("1".Equals(consentDialogStateStr))
             {
@@ -114,6 +114,7 @@ public abstract class MaxSdkBase
             {
                 sdkConfiguration.ConsentDialogState = ConsentDialogState.Unknown;
             }
+#pragma warning restore 0618
 
 #if UNITY_IPHONE || UNITY_IOS
             var appTrackingStatusStr = MaxSdkUtils.GetStringFromDictionary(eventProps, "appTrackingStatus", "-1");

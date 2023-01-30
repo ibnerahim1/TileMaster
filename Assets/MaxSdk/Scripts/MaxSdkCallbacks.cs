@@ -1656,7 +1656,9 @@ public class MaxSdkCallbacks : MonoBehaviour
 
         var sdkConfiguration = new MaxSdkBase.SdkConfiguration();
         sdkConfiguration.IsSuccessfullyInitialized = true;
+#pragma warning disable 0618
         sdkConfiguration.ConsentDialogState = MaxSdkBase.ConsentDialogState.Unknown;
+#pragma warning restore 0618
         sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Authorized;
         var currentRegion = RegionInfo.CurrentRegion;
         sdkConfiguration.CountryCode = currentRegion != null ? currentRegion.TwoLetterISORegionName : "US";

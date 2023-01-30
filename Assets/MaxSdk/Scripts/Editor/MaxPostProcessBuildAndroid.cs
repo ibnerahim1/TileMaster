@@ -8,6 +8,7 @@
 
 #if UNITY_ANDROID && UNITY_2018_2_OR_NEWER
 
+using AppLovinMax.Scripts.IntegrationManager.Editor;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,7 +31,21 @@ namespace AppLovinMax.Scripts.Editor
 #endif
         private const string PropertyDexingArtifactTransform = "android.enableDexingArtifactTransform";
         private const string DisableProperty = "=false";
-        private const string AppLovinVerboseLoggingOnKey = "applovin.sdk.verbose_logging";
+
+        private const string KeyMetaDataAppLovinVerboseLoggingOn = "applovin.sdk.verbose_logging";
+        private const string KeyMetaDataGoogleApplicationId = "com.google.android.gms.ads.APPLICATION_ID";
+        private const string KeyMetaDataGoogleAdManagerApp = "com.google.android.gms.ads.AD_MANAGER_APP";
+
+        private static readonly XNamespace AndroidNamespace = "http://schemas.android.com/apk/res/android";
+
+        private static string PluginMediationDirectory
+        {
+            get
+            {
+                var pluginParentDir = AppLovinIntegrationManager.MediationSpecificPluginParentDirectory;
+                return Path.Combine(pluginParentDir, "MaxSdk/Mediation/");
+            }
+        }
 
         public void OnPostGenerateGradleAndroidProject(string path)
         {
@@ -72,8 +87,8 @@ namespace AppLovinMax.Scripts.Editor
                 MaxSdkLogger.UserError("Failed to enable AndroidX and Jetifier. gradle.properties file write failed.");
                 Console.WriteLine(exception);
             }
-            
-            EnableVerboseLoggingIfNeeded(path);
+
+            ProcessAndroidManifest(path);
         }
 
         public int callbackOrder
@@ -81,11 +96,8 @@ namespace AppLovinMax.Scripts.Editor
             get { return int.MaxValue; }
         }
 
-        private static void EnableVerboseLoggingIfNeeded(string path)
+        private static void ProcessAndroidManifest(string path)
         {
-            if (!EditorPrefs.HasKey(MaxSdkLogger.KeyVerboseLoggingEnabled)) return;
-
-            var enabled = EditorPrefs.GetBool(MaxSdkLogger.KeyVerboseLoggingEnabled);
             var manifestPath = Path.Combine(path, "src/main/AndroidManifest.xml");
             XDocument manifest;
             try
@@ -115,13 +127,27 @@ namespace AppLovinMax.Scripts.Editor
                 return;
             }
 
+            var metaDataElements = elementApplication.Descendants().Where(element => element.Name.LocalName.Equals("meta-data"));
+
+            EnableVerboseLoggingIfNeeded(elementApplication);
+            AddGoogleApplicationIdIfNeeded(elementApplication, metaDataElements);
+            AddGoogleAdManagerAppMetaDataIfNeeded(elementApplication, metaDataElements);
+
+            // Save the updated manifest file.
+            manifest.Save(manifestPath);
+        }
+
+        private static void EnableVerboseLoggingIfNeeded(XElement elementApplication)
+        {
+            var enabled = EditorPrefs.GetBool(MaxSdkLogger.KeyVerboseLoggingEnabled, false);
+
             var descendants = elementApplication.Descendants();
             var verboseLoggingMetaData = descendants.FirstOrDefault(descendant => descendant.FirstAttribute != null &&
                                                                                   descendant.FirstAttribute.Name.LocalName.Equals("name") &&
-                                                                                  descendant.FirstAttribute.Value.Equals(AppLovinVerboseLoggingOnKey) &&
+                                                                                  descendant.FirstAttribute.Value.Equals(KeyMetaDataAppLovinVerboseLoggingOn) &&
                                                                                   descendant.LastAttribute != null &&
                                                                                   descendant.LastAttribute.Name.LocalName.Equals("value"));
-            
+
             // check if applovin.sdk.verbose_logging meta data exists.
             if (verboseLoggingMetaData != null)
             {
@@ -141,16 +167,91 @@ namespace AppLovinMax.Scripts.Editor
                 if (enabled)
                 {
                     // add applovin.sdk.verbose_logging meta data if it does not exist.
-                    var metaData = new XElement("meta-data");
-                    XNamespace androidNamespace = "http://schemas.android.com/apk/res/android";
-                    metaData.Add(new XAttribute(androidNamespace + "name", AppLovinVerboseLoggingOnKey));
-                    metaData.Add(new XAttribute(androidNamespace + "value", enabled.ToString()));
+                    var metaData = CreateMetaDataElement(KeyMetaDataAppLovinVerboseLoggingOn, enabled.ToString());
                     elementApplication.Add(metaData);
                 }
             }
+        }
 
-            // Save the updated manifest file.
-            manifest.Save(manifestPath);
+        private static void AddGoogleApplicationIdIfNeeded(XElement elementApplication, IEnumerable<XElement> metaDataElements)
+        {
+            var googleApplicationIdMetaData = GetMetaDataElement(metaDataElements, KeyMetaDataGoogleApplicationId);
+            if (!AppLovinIntegrationManager.IsAdapterInstalled("Google"))
+            {
+                if (googleApplicationIdMetaData != null) googleApplicationIdMetaData.Remove();
+                return;
+            }
+
+            var appId = AppLovinSettings.Instance.AdMobAndroidAppId;
+            // Log error if the App ID is not set.
+            if (string.IsNullOrEmpty(appId) || !appId.StartsWith("ca-app-pub-"))
+            {
+                MaxSdkLogger.UserError("AdMob App ID is not set. Please enter a valid app ID within the AppLovin Integration Manager window.");
+                return;
+            }
+
+            // Check if the Google App ID meta data already exists. Update if it already exists.
+            if (googleApplicationIdMetaData != null)
+            {
+                googleApplicationIdMetaData.SetAttributeValue(AndroidNamespace + "value", appId);
+            }
+            // Meta data doesn't exist, add it.
+            else
+            {
+                elementApplication.Add(CreateMetaDataElement(KeyMetaDataGoogleApplicationId, appId));
+            }
+        }
+
+        private static void AddGoogleAdManagerAppMetaDataIfNeeded(XElement elementApplication, IEnumerable<XElement> metaDataElements)
+        {
+            var googleAdManagerAppMetaData = GetMetaDataElement(metaDataElements, KeyMetaDataGoogleAdManagerApp);
+            if (!AppLovinIntegrationManager.IsAdapterInstalled("GoogleAdManager"))
+            {
+                if (googleAdManagerAppMetaData != null) googleAdManagerAppMetaData.Remove();
+                return;
+            }
+
+            // Check if the Google Ad Manager meta data already exists. Update if it already exists.
+            if (googleAdManagerAppMetaData != null)
+            {
+                elementApplication.SetAttributeValue(AndroidNamespace + "value", true);
+            }
+            // Meta data doesn't exist, add it.
+            else
+            {
+                elementApplication.Add(CreateMetaDataElement(KeyMetaDataGoogleAdManagerApp, true));
+            }
+        }
+
+        /// <summary>
+        /// Creates and returns a <c>meta-data</c> element with the given name and value. 
+        /// </summary>
+        private static XElement CreateMetaDataElement(string name, object value)
+        {
+            var metaData = new XElement("meta-data");
+            metaData.Add(new XAttribute(AndroidNamespace + "name", name));
+            metaData.Add(new XAttribute(AndroidNamespace + "value", value));
+
+            return metaData;
+        }
+
+        /// <summary>
+        /// Looks through all the given meta-data elements to check if the required one exists. Returns <c>null</c> if it doesn't exist.
+        /// </summary>
+        private static XElement GetMetaDataElement(IEnumerable<XElement> metaDataElements, string metaDataName)
+        {
+            foreach (var metaDataElement in metaDataElements)
+            {
+                var attributes = metaDataElement.Attributes();
+                if (attributes.Any(attribute => attribute.Name.Namespace.Equals(AndroidNamespace)
+                                                && attribute.Name.LocalName.Equals("name")
+                                                && attribute.Value.Equals(metaDataName)))
+                {
+                    return metaDataElement;
+                }
+            }
+
+            return null;
         }
     }
 }

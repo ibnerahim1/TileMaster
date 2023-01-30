@@ -244,7 +244,7 @@ PlayerSettings:
   useCustomLauncherGradleManifest: 0
   useCustomBaseGradleTemplate: 0
   useCustomGradlePropertiesTemplate: 0
-  useCustomProguardFile: 0
+  useCustomProguardFile: 1
   AndroidTargetArchitectures: 3
   AndroidTargetDevices: 0
   AndroidSplashScreenScale: 2
@@ -694,8 +694,8 @@ PlayerSettings:
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
     1: DREAMTECK_SPLINES;MOREMOUNTAINS_NICEVIBRATIONS
-    4: HOMA_BELLY
-    7: MOREMOUNTAINS_NICEVIBRATIONS;DREAMTECK_SPLINES;HOMA_BELLY
+    4: HOMA_BELLY;tenjin_applovin_enabled
+    7: MOREMOUNTAINS_NICEVIBRATIONS;DREAMTECK_SPLINES;HOMA_BELLY;tenjin_applovin_enabled
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

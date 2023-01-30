@@ -53,41 +53,29 @@ namespace AppLovinMax.Scripts.Editor
             "Smaato"
         };
 
-        private static List<string> DynamicLibrariesToEmbed
+        private static readonly List<string> DynamicLibrariesToEmbed = new List<string>
         {
-            get
-            {
-                var dynamicLibrariesToEmbed = new List<string>()
-                {
-                    "FBSDKCoreKit_Basics.xcframework",
-                    "HyprMX.xcframework",
-                    "OMSDK_Appodeal.xcframework",
-                    "OMSDK_Ogury.xcframework",
-                    "OMSDK_Pubnativenet.xcframework",
-                    "OMSDK_Smaato.xcframework"
-                };
-
-                if (ShouldEmbedSnapSdk())
-                {
-                    dynamicLibrariesToEmbed.Add("SAKSDK.framework");
-                    dynamicLibrariesToEmbed.Add("SAKSDK.xcframework");
-                }
-
-                return dynamicLibrariesToEmbed;
-            }
-        }
+            "DTBiOSSDK.xcframework",
+            "FBSDKCoreKit_Basics.xcframework",
+            "HyprMX.xcframework",
+            "MobileFuseSDK.xcframework",
+            "OMSDK_Appodeal.xcframework",
+            "OMSDK_Ogury.xcframework",
+            "OMSDK_Pubnativenet.xcframework",
+            "OMSDK_Smaato.xcframework"
+        };
 
         private static List<string> SwiftLanguageNetworks
         {
             get
             {
                 var swiftLanguageNetworks = new List<string>();
-                if (IsAdapterInstalled("Facebook", "6.9.0.0"))
+                if (AppLovinIntegrationManager.IsAdapterInstalled("Facebook", "6.9.0.0"))
                 {
                     swiftLanguageNetworks.Add("Facebook");
                 }
 
-                if (IsAdapterInstalled("UnityAds", "4.4.0.0"))
+                if (AppLovinIntegrationManager.IsAdapterInstalled("UnityAds", "4.4.0.0"))
                 {
                     swiftLanguageNetworks.Add("UnityAds");
                 }
@@ -188,12 +176,6 @@ namespace AppLovinMax.Scripts.Editor
             runpathSearchPaths += "@executable_path/Frameworks";
             project.SetBuildProperty(targetGuid, "LD_RUNPATH_SEARCH_PATHS", runpathSearchPaths);
 #endif
-
-            if (ShouldEmbedSnapSdk())
-            {
-                // Needed to build successfully on Xcode 12+, as Snap was build with latest Xcode but not as an xcframework
-                project.AddBuildProperty(targetGuid, "VALIDATE_WORKSPACE", "YES");
-            }
         }
 
         private static void LocalizeUserTrackingDescriptionIfNeeded(string localizedUserTrackingDescription, string localeCode, string buildPath, PBXProject project, string targetGuid)
@@ -353,11 +335,12 @@ namespace AppLovinMax.Scripts.Editor
 
 #if UNITY_2018_2_OR_NEWER
             EnableVerboseLoggingIfNeeded(plist);
+            AddGoogleApplicationIdIfNeeded(plist);
+            AddGoogleAdManagerAppIfNeeded(plist);
 #endif
             EnableConsentFlowIfNeeded(plist);
             AddSkAdNetworksInfoIfNeeded(plist);
             UpdateAppTransportSecuritySettingsIfNeeded(plist);
-            AddSnapAppStoreAppIdIfNeeded(plist);
 
             plist.WriteToFile(plistPath);
         }
@@ -396,6 +379,38 @@ namespace AppLovinMax.Scripts.Editor
             {
                 plist.root.values.Remove(AppLovinVerboseLoggingOnKey);
             }
+        }
+
+        private static void AddGoogleApplicationIdIfNeeded(PlistDocument plist)
+        {
+            const string googleApplicationIdentifier = "GADApplicationIdentifier";
+            if (!AppLovinIntegrationManager.IsAdapterInstalled("Google"))
+            {
+                plist.root.values.Remove(googleApplicationIdentifier);
+                return;
+            }
+
+            var appId = AppLovinSettings.Instance.AdMobIosAppId;
+            // Log error if the App ID is not set.
+            if (string.IsNullOrEmpty(appId) || !appId.StartsWith("ca-app-pub-"))
+            {
+                Debug.LogError("[AppLovin MAX] AdMob App ID is not set. Please enter a valid app ID within the AppLovin Integration Manager window.");
+                return;
+            }
+            
+            plist.root.SetString(googleApplicationIdentifier, appId);
+        }
+
+        private static void AddGoogleAdManagerAppIfNeeded(PlistDocument plist)
+        {
+            const string googleAdManagerApp = "GADIsAdManagerApp";
+            if (!AppLovinIntegrationManager.IsAdapterInstalled("GoogleAdManager"))
+            {
+                plist.root.values.Remove(googleAdManagerApp);
+                return;
+            }
+
+            plist.root.SetBoolean(googleAdManagerApp, true);
         }
 #endif
 
@@ -563,59 +578,6 @@ namespace AppLovinMax.Scripts.Editor
                 MaxSdkLogger.UserDebug("Removing NSAllowsArbitraryLoadsInWebContent");
                 atsRootDict.Remove("NSAllowsArbitraryLoadsInWebContent");
             }
-        }
-
-        private static void AddSnapAppStoreAppIdIfNeeded(PlistDocument plist)
-        {
-            var snapDependencyPath = Path.Combine(PluginMediationDirectory, "Snap/Editor/Dependencies.xml");
-            if (!File.Exists(snapDependencyPath)) return;
-
-            // App Store App ID is only needed for iOS versions 2.0.0.0 or newer.
-            var currentVersion = AppLovinIntegrationManager.GetCurrentVersions(snapDependencyPath);
-            var iosVersionComparison = MaxSdkUtils.CompareVersions(currentVersion.Ios, AppLovinSettings.SnapAppStoreAppIdMinVersion);
-            if (iosVersionComparison == MaxSdkUtils.VersionComparisonResult.Lesser) return;
-
-            if (AppLovinSettings.Instance.SnapAppStoreAppId <= 0)
-            {
-                MaxSdkLogger.UserError("Snap App Store App ID is not set. Please enter a valid App ID within the AppLovin Integration Manager window.");
-                return;
-            }
-
-            plist.root.SetInteger("SCAppStoreAppID", AppLovinSettings.Instance.SnapAppStoreAppId);
-        }
-
-        /// <summary>
-        /// Checks whether or not an adapter with the given version or newer exists.
-        /// </summary>
-        /// <param name="adapterName">The name of the network (the root adapter folder name in "MaxSdk/Mediation/" folder.</param>
-        /// <param name="version">The min adapter version to check for. Can be <c>null</c> if we want to check for any version.</param>
-        /// <returns><c>true</c> if an adapter with the min version is installed.</returns>
-        private static bool IsAdapterInstalled(string adapterName, string version = null)
-        {
-            var dependencyFilePath = Path.Combine(PluginMediationDirectory, adapterName + "/Editor/Dependencies.xml");
-            if (!File.Exists(dependencyFilePath)) return false;
-
-            // If version is null, we just need the adapter installed. We don't have to check for a specific version.
-            if (version == null) return true;
-
-            var currentVersion = AppLovinIntegrationManager.GetCurrentVersions(dependencyFilePath);
-            var iosVersionComparison = MaxSdkUtils.CompareVersions(currentVersion.Ios, version);
-            return iosVersionComparison != MaxSdkUtils.VersionComparisonResult.Lesser;
-        }
-
-        private static bool ShouldEmbedSnapSdk()
-        {
-            var snapDependencyPath = Path.Combine(PluginMediationDirectory, "Snap/Editor/Dependencies.xml");
-            if (!File.Exists(snapDependencyPath)) return false;
-
-            // Return true for UNITY_2019_3_OR_NEWER because app will crash on launch unless embedded.
-#if UNITY_2019_3_OR_NEWER
-            return true;
-#else
-            var currentVersion = AppLovinIntegrationManager.GetCurrentVersions(snapDependencyPath);
-            var iosVersionComparison = MaxSdkUtils.CompareVersions(currentVersion.Ios, "1.0.7.2");
-            return iosVersionComparison != MaxSdkUtils.VersionComparisonResult.Lesser;
-#endif
         }
 
 #if UNITY_2019_3_OR_NEWER

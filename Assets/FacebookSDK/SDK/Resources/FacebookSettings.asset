@@ -16,9 +16,9 @@ MonoBehaviour:
   clientTokens:
   - 
   appIds:
-  - 0
+  - 488561750043245
   appLabels:
-  - App name
+  - Tile Expert
   cookie: 1
   logging: 1
   status: 1

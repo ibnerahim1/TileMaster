@@ -19,36 +19,47 @@ public class Settings : MonoBehaviour
 
     public void ToggleSettings(bool condition)
     {
-        gManager.PlaySound(GameManager.soundTypes.tap);
+        YsoCorp.GameUtils.YCManager.instance.adsManager.ShowInterstitial(() =>
+        {
+            gManager.PlaySound(GameManager.soundTypes.tap);
 
-        if (condition)
-        {
-            settingsPanel.SetActive(true);
-            settingsPanel.transform.GetChild(0).DOScale(Vector3.one, 0.2f).SetEase(Ease.Linear).From(Vector3.zero);
-        }
-        else
-        {
-            settingsPanel.SetActive(false);
-        }
+            if (condition)
+            {
+                settingsPanel.SetActive(true);
+                settingsPanel.transform.GetChild(0).DOScale(Vector3.one, 0.2f).SetEase(Ease.Linear).From(Vector3.zero);
+            }
+            else
+            {
+                settingsPanel.SetActive(false);
+            }
+        });
     }
     public void ToggleMusic()
     {
-        gManager.PlaySound(GameManager.soundTypes.tap);
+        YsoCorp.GameUtils.YCManager.instance.adsManager.ShowInterstitial(() =>
+        {
+            // TODO call the action (eg: play, restart, back, next level, ...)
+            gManager.PlaySound(GameManager.soundTypes.tap);
 
-        music = music == 0 ? 1 : 0;
-        PlayerPrefs.SetInt("music", music);
-        musicImg.SetActive(music == 0);
-        audioListener.enabled = (music == 1);
-        ToggleSettings(false);
+            music = music == 0 ? 1 : 0;
+            PlayerPrefs.SetInt("music", music);
+            musicImg.SetActive(music == 0);
+            audioListener.enabled = (music == 1);
+            ToggleSettings(false);
+        });
     }
     public void ToggleHaptic()
     {
-        gManager.PlaySound(GameManager.soundTypes.tap);
+        YsoCorp.GameUtils.YCManager.instance.adsManager.ShowInterstitial(() =>
+        {
+            // TODO call the action (eg: play, restart, back, next level, ...)
+            gManager.PlaySound(GameManager.soundTypes.tap);
 
-        haptic = haptic == 0 ? 1 : 0;
-        PlayerPrefs.SetInt("haptic", haptic);
-        hapticImg.SetActive(haptic == 0);
-        ToggleSettings(false);
+            haptic = haptic == 0 ? 1 : 0;
+            PlayerPrefs.SetInt("haptic", haptic);
+            hapticImg.SetActive(haptic == 0);
+            ToggleSettings(false);
+        });
     }
 
     private void InitialiseSettings()

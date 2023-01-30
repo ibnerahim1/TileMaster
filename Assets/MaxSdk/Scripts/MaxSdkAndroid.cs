@@ -123,6 +123,17 @@ public class MaxSdkAndroid : MaxSdkBase
     }
 
     /// <summary>
+    /// Present the creative debugger UI.
+    /// This debugger tool provides information for recently displayed ads.
+    ///
+    /// Please call this method after the SDK has initialized.
+    /// </summary>
+    public static void ShowCreativeDebugger()
+    {
+        MaxUnityPluginClass.CallStatic("showCreativeDebugger");
+    }
+
+    /// <summary>
     /// Returns the arbitrary ad value for a given ad unit identifier with key. Returns null if no ad is loaded.
     /// </summary>
     /// <param name="adUnitIdentifier"></param>
@@ -1213,7 +1224,14 @@ public class MaxSdkAndroid : MaxSdkBase
 
         public void onEvent(string propsStr)
         {
-            MaxSdkCallbacks.Instance.ForwardEvent(propsStr);
+            try
+            {
+                MaxSdkCallbacks.Instance.ForwardEvent(propsStr);
+            }
+            catch (Exception exception)
+            {
+                MaxSdkLogger.UserError("Unable to notify ad delegate due to exception: " + exception.Message);
+            }
         }
     }
 }

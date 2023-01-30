@@ -1,4 +1,0 @@
-<linker>
-    <assembly fullname="MaxSdk.Scripts" preserve="all"/>
-    <assembly fullname="MondayOFF" preserve="all"/>
-</linker>

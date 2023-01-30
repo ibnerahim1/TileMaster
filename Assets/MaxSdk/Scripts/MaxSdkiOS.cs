@@ -141,6 +141,20 @@ public class MaxSdkiOS : MaxSdkBase
     }
 
     [DllImport("__Internal")]
+    private static extern void _MaxShowCreativeDebugger();
+
+    /// <summary>
+    /// Present the creative debugger UI.
+    /// This debugger tool provides information for recently displayed ads.
+    ///
+    /// Please call this method after the SDK has initialized.
+    /// </summary>
+    public static void ShowCreativeDebugger()
+    {
+        _MaxShowCreativeDebugger();
+    }
+
+    [DllImport("__Internal")]
     private static extern string _MaxGetAdValue(string adUnitIdentifier, string key);
 
     /// <summary>
@@ -1470,7 +1484,14 @@ public class MaxSdkiOS : MaxSdkBase
     [MonoPInvokeCallback(typeof(ALUnityBackgroundCallback))]
     internal static void BackgroundCallback(string propsStr)
     {
-        MaxSdkCallbacks.Instance.ForwardEvent(propsStr);
+        try
+        {
+            MaxSdkCallbacks.Instance.ForwardEvent(propsStr);
+        }
+        catch (Exception exception)
+        {
+            MaxSdkLogger.UserError("Unable to notify ad delegate due to exception: " + exception.Message);
+        }
     }
 
     #endregion

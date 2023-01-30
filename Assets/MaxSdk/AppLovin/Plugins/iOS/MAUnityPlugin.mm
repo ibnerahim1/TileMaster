@@ -282,6 +282,17 @@ extern "C"
         [_sdk showMediationDebugger];
     }
 
+    void _MaxShowCreativeDebugger()
+    {
+        if ( !_sdk )
+        {
+            NSLog(@"[%@] Failed to show creative debugger - please ensure the AppLovin MAX Unity Plugin has been initialized by calling 'MaxSdk.InitializeSdk();'!", TAG);
+            return;
+        }
+        
+        [_sdk showCreativeDebugger];
+    }
+
     void _MaxShowConsentDialog()
     {
         NSLog(@"[%@] Failed to show consent dialog - Unavailable on iOS, please use the consent flow: https://dash.applovin.com/documentation/mediation/unity/getting-started/consent-flow", TAG);

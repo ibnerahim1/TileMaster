@@ -6,110 +6,105 @@ using TMPro;
 
 public class Store : MonoBehaviour
 {
-    public Button wallButton, floorButton, tableButton;
-    public TextMeshProUGUI wallCostTxt, wallLevelTxt, floorCostTxt, floorLevelTxt, tableCostTxt, tableLevelTxt;
+    public Transform tileContent, decorContent;
+
+    public GameObject tilePanel, decorPanel, unlockTileButton, unlockDecorButton;
+    public Image tileButtonBG, decorButtonBG;
+    public Sprite blueBG, greyBG;
 
     GameManager gManager;
     // Start is called before the first frame update
     void Start()
     {
         gManager = FindObjectOfType<GameManager>();
-        UpdateStore();
+        ToggleTilePanel();
+        UpdateShop();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
-    }
-    private void LateUpdate()
-    {
-        //wallButton.interactable = (gManager.cash > GetWallCost() && gManager.wallLevel < gManager.walls.childCount);
-        //floorButton.interactable = (gManager.cash > GetFloorCost() && gManager.floorLevel < gManager.floors.childCount);
-        //tableButton.interactable = (gManager.cash > GetTableCost() && gManager.tableLevel < gManager.tables.childCount);
-    }
-    public void Upgrade(string val)
-    {
-        gManager.PlaySound(GameManager.soundTypes.upgrade);
 
-        //switch (val)
-        //{
-        //    case "wall":
-        //        gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(false);
-        //        gManager.cash -= GetWallCost();
-        //        gManager.wallLevel++;
-        //        gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(true);
-        //        break;
-        //    case "floor":
-        //        gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(false);
-        //        gManager.cash -= GetFloorCost();
-        //        gManager.floorLevel++;
-        //        gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(true);
-        //        break;
-        //    case "table":
-        //        gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(false);
-        //        gManager.cash -= GetTableCost();
-        //        gManager.tableLevel++;
-        //        gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(true);
-        //        break;
-        //}
-        UpdateStore();
-        gManager.SaveData();
-    }
-    void UpdateStore()
-    {
-        //wallLevelTxt.text = gManager.wallLevel < gManager.walls.childCount? "LEVEL " + gManager.wallLevel : "MAX";
-        //floorLevelTxt.text = gManager.floorLevel < gManager.floors.childCount ? "LEVEL " + gManager.floorLevel : "MAX";
-        //tableLevelTxt.text = gManager.tableLevel < gManager.tables.childCount ? "LEVEL " + gManager.tableLevel : "MAX";
-
-        wallCostTxt.text = gManager.GetValue(GetWallCost());
-        floorCostTxt.text = gManager.GetValue(GetFloorCost());
-        tableCostTxt.text = gManager.GetValue(GetTableCost());
     }
 
-    public int GetWallCost()
+    public void UnlockTile()
     {
-        return (int)Mathf.Pow((gManager.wallLevel) * 10, 2);
-    }
-    public int GetFloorCost()
-    {
-        return (int)Mathf.Pow((gManager.floorLevel) * 10, 2);
-    }
-    public int GetTableCost()
-    {
-        return (int)Mathf.Pow((gManager.tableLevel) * 10, 2);
-    }
-
-    public string GetValue(float val)
-    {
-        string str = null;
-
-        if (val < 1000)
-            str = Mathf.RoundToInt(val).ToString();
-        else if (val < 1000000)
-            str = Round2Frac(val / 1000) + "K";
-        else if (val < 1000000000)
-            str = Round2Frac(val / 1000000) + "M";
-        else if (val < 1000000000000)
-            str = Round2Frac(val / 1000000000) + "B";
-
-        return str;
-    }
-    string Round2Frac(float val)
-    {
-        string str = null;
-
-        if (Mathf.Round(val) < 10)
+        if (YsoCorp.GameUtils.YCManager.instance.adsManager.IsRewardBasedVideo())
         {
-            str = (Mathf.Round(val * 100) / 100).ToString();
+            YsoCorp.GameUtils.YCManager.instance.adsManager.ShowRewarded((bool ok) =>
+            {
+                if (ok)
+                {
+                    gManager.tilesLevel++;
+                    gManager.SaveData();
+                    UpdateShop();
+                    if (gManager.tilesLevel > tileContent.childCount)
+                        unlockTileButton.SetActive(false);
+                    else
+                        unlockTileButton.SetActive(true);
+                }
+            });
         }
-        else if (Mathf.Round(val) < 100)
+    }
+    public void UnlockDecor()
+    {
+        if (YsoCorp.GameUtils.YCManager.instance.adsManager.IsRewardBasedVideo())
         {
-            str = (Mathf.Round(val * 10) / 10).ToString();
+            YsoCorp.GameUtils.YCManager.instance.adsManager.ShowRewarded((bool ok) =>
+            {
+                if (ok)
+                {
+                    gManager.decorLevel++;
+                    gManager.SaveData();
+                    UpdateShop();
+                    if (gManager.decorLevel > decorContent.childCount)
+                        unlockDecorButton.SetActive(false);
+                    else
+                        unlockDecorButton.SetActive(true);
+                }
+            });
         }
+    }
+
+    public void ToggleTilePanel()
+    {
+        tilePanel.SetActive(true);
+        decorPanel.SetActive(false);
+        tileButtonBG.sprite = blueBG;
+        decorButtonBG.sprite = greyBG;
+        unlockDecorButton.SetActive(false);
+        if (gManager.tilesLevel > tileContent.childCount)
+            unlockTileButton.SetActive(false);
         else
-            str = Mathf.Round(val).ToString();
+            unlockTileButton.SetActive(true);
+    }
+    public void ToggleDecorPanel()
+    {
+        decorPanel.SetActive(true);
+        tilePanel.SetActive(false);
+        decorButtonBG.sprite = blueBG;
+        tileButtonBG.sprite = greyBG;
+        unlockTileButton.SetActive(false);
+        if (gManager.decorLevel > decorContent.childCount)
+            unlockDecorButton.SetActive(false);
+        else
+            unlockDecorButton.SetActive(true);
+    }
 
-        return str;
+    void UpdateShop()
+    {
+        for (int i = 0; i < gManager.tilesLevel; i++)
+        {
+            tileContent.GetChild(i).GetChild(0).gameObject.SetActive(true);
+            tileContent.GetChild(i).GetChild(1).gameObject.SetActive(false);
+            tileContent.GetChild(i).GetChild(2).gameObject.SetActive(false);
+        }
+        for (int i = 0; i < gManager.decorLevel; i++)
+        {
+            decorContent.GetChild(i).GetChild(0).GetComponent<Image>().color = Color.white;
+            decorContent.GetChild(i).GetChild(1).gameObject.SetActive(false);
+            decorContent.GetChild(i).GetChild(2).gameObject.SetActive(false);
+        }
+        gManager.ShopUpdated();
     }
 }

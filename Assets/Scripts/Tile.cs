@@ -9,6 +9,7 @@ public class Tile : MonoBehaviour
     public Vector2Int index;
     private Material material;
     private GameManager gManager;
+    public bool active;
 
     private void Start()
     {
@@ -23,11 +24,14 @@ public class Tile : MonoBehaviour
         if (isTile && gManager.remove)
             transform.DOMoveY(0.2f, 0.25f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetDelay(transform.childCount * 0.01f).SetId(transform.GetHashCode());
         else
+        {
             material.DOFade(1, 0.5f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetDelay(transform.childCount * 0.01f).SetId(transform.GetHashCode());
+            active = true;
+        }
     }
     private void OnMouseEnter()
     {
-        if (!isTile && !gManager.remove && gManager.gameStarted)
+        if (!isTile && !gManager.remove && gManager.gameStarted && !gManager.bonus)
         {
             gManager.Touched(index);
             DOTween.Kill(transform.GetHashCode());
@@ -41,15 +45,23 @@ public class Tile : MonoBehaviour
     }
     private void OnMouseDown()
     {
+        if (!isTile && !gManager.remove && gManager.gameStarted && gManager.bonus && !gManager.touched)
+        {
+            gManager.Touched(index);
+            DOTween.Kill(transform.GetHashCode());
+            material.DOFade(1, 0);
+        }
         if (isTile && gManager.remove)
         {
+            gManager.PlayHaptic(GameManager.hapticTypes.heavy);
+
+            transform.DOScale(new Vector3(1.8f, 1, 1.8f), 0);
             isTile = false;
             gManager.touchCount--;
             DOTween.Kill(transform.GetHashCode());
             transform.DOMoveY(0, 0);
-            transform.DOScale(new Vector3(1.8f, 1, 1.8f), 0);
             GetComponent<MeshRenderer>().material = material;
-            Instantiate(gManager.tileRemoveFX, transform.position, Quaternion.identity);
+            Instantiate(gManager.destroyedTileFX, transform.position, Quaternion.identity);
             material.DOFade(0, 0);
         }
     }
