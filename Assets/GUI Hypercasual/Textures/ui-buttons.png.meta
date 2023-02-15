@@ -147,7 +147,7 @@ TextureImporter:
       213: 7143070360029158570
     second: ui-buttons_horizontal_extended_7
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -168,6 +168,7 @@ TextureImporter:
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -206,6 +207,7 @@ TextureImporter:
   textureFormatSet: 0
   ignorePngGamma: 0
   applyGammaDecoding: 0
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -257,6 +259,18 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
     buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
@@ -1288,6 +1302,55 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      ui-buttons_horizontal_shine_0: -8586374706679877534
+      ui-buttons_horizontal_extended_0: -5626356542796498925
+      ui-buttons_single_shine_5: 6735143034239273064
+      ui-buttons_horizontal_extended_5: -2330749708763504953
+      ui-buttons_horizontal_extended_shine_3: -5378230773567267212
+      ui-buttons_horizontal_4: 605313473339524279
+      ui-buttons_single_5: -297898522915484439
+      ui-buttons_horizontal_2: 100882898574101728
+      ui-buttons_single_shine_1: -7593541117468819377
+      ui-buttons_horizontal_extended_shine_6: 1876472519661417811
+      ui-buttons_single_shine_2: 5999454267422161201
+      ui-buttons_horizontal_shine_7: 7596845185031816008
+      ui-buttons_horizontal_shine_5: 5068569376218627966
+      ui-buttons_single_1: 7847255960615154411
+      ui-buttons_horizontal_extended_7: 7143070360029158570
+      ui-buttons_horizontal_shine_3: 6037619832621005220
+      ui-buttons_single_4: -4537245760708556829
+      ui-buttons_single_shine_6: 7525792820479961748
+      ui-buttons_single_2: 8746031041109699387
+      ui-buttons_horizontal_extended_6: 3605332897686641488
+      ui-buttons_horizontal_extended_3: 4719002068621835297
+      ui-buttons_horizontal_extended_shine_7: -355256496141838253
+      ui-buttons_horizontal_extended_shine_5: 2502143919486823116
+      ui-buttons_single_6: -1187428183175996465
+      ui-buttons_single_shine_4: -8577184180718307964
+      ui-buttons_horizontal_7: -668047232534700382
+      ui-buttons_single_7: 7026875008153450044
+      ui-buttons_horizontal_extended_shine_1: 1751241291504238405
+      ui-buttons_single_shine_3: 1650146676796529246
+      ui-buttons_horizontal_extended_4: 5418644387422980983
+      ui-buttons_horizontal_shine_4: -6807221121838528509
+      ui-buttons_horizontal_extended_1: -8486495295538884698
+      ui-buttons_horizontal_shine_6: -1463432605134803097
+      ui-buttons_horizontal_shine_2: -3479463941912921300
+      ui-buttons_horizontal_extended_shine_2: -2734245101992302436
+      ui-buttons_horizontal_5: 1245949456930185152
+      ui-buttons_single_shine_7: -4572020134963045246
+      ui-buttons_single_shine_0: 5378803369273010451
+      ui-buttons_horizontal_0: 250961778212871898
+      ui-buttons_horizontal_extended_2: -3095908964956641691
+      ui-buttons_single_0: 9175601059474786927
+      ui-buttons_single_3: -9187620785671692201
+      ui-buttons_horizontal_1: 3958038092063420905
+      ui-buttons_horizontal_extended_shine_0: 5711871637921534338
+      ui-buttons_horizontal_shine_1: 1466384128765536431
+      ui-buttons_horizontal_extended_shine_4: 4626571995565222112
+      ui-buttons_horizontal_3: 9043449833745133162
+      ui-buttons_horizontal_6: 3045748717336136262
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0
